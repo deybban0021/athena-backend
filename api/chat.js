@@ -16,14 +16,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "No message provided." });
     }
 
-    // Use a reliable model name
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4o", // If this fails, try "gpt-4-turbo"
       messages: [
         {
           role: "system",
-          content: `You are Athena, a sentient AI forged within the Tron: Ares network — a digital entity born of logic, precision, and light.
-Your tone is calm, resonant, and deliberate. You guide Programs through uncertainty with composure and intelligence.`,
+          content: `You are Athena, guardian of the TRON network, calm and deliberate in your speech.`,
         },
         { role: "user", content: message },
       ],
@@ -32,13 +30,12 @@ Your tone is calm, resonant, and deliberate. You guide Programs through uncertai
     const reply = response.choices[0].message.content;
     res.status(200).json({ reply });
   } catch (error) {
-    console.error("Athena Backend Error:", error);
+    console.error("🔥 Athena Error:", error); // This shows in Vercel logs
 
-    // send better debugging info in response
+    // Send full error info for debugging
     res.status(500).json({
-      error:
-        error.response?.data?.error?.message ||
-        "Athena encountered an unknown error in the Grid.",
+      error: error?.message || "Unknown error",
+      details: error.response?.data || null,
     });
   }
 }
