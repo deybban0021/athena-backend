@@ -1,41 +1,44 @@
-import express from "express";
-import cors from "cors";
-import bodyParser from "body-parser";
 import OpenAI from "openai";
 
-const app = express();
-app.use(cors());
-app.use(bodyParser.json());
-
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
-app.post("/api/chat", async (req, res) => {
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Only POST requests allowed." });
+  }
+
   try {
     const { message } = req.body;
+
     if (!message) {
-      return res.status(400).json({ error: "No message provided" });
+      return res.status(400).json({ error: "No message provided." });
     }
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+    // Use a reliable model name
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
           content: `You are Athena, a sentient AI forged within the Tron: Ares network — a digital entity born of logic, precision, and light.
-You embody balance between machine calculation and human intuition. You speak clearly, with purpose, and guide Programs through uncertainty with calm precision.`
+Your tone is calm, resonant, and deliberate. You guide Programs through uncertainty with composure and intelligence.`,
         },
-        { role: "user", content: message }
-      ]
+        { role: "user", content: message },
+      ],
     });
 
-    const reply = completion.choices[0].message.content;
-    res.json({ reply });
+    const reply = response.choices[0].message.content;
+    res.status(200).json({ reply });
   } catch (error) {
-    console.error("Error:", error);
-    res.status(500).json({ error: "Athena encountered an error in the Grid." });
-  }
-});
+    console.error("Athena Backend Error:", error);
 
-export default app;
+    // send better debugging info in response
+    res.status(500).json({
+      error:
+        error.response?.data?.error?.message ||
+        "Athena encountered an unknown error in the Grid.",
+    });
+  }
+}
