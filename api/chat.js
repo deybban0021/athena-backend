@@ -11,17 +11,16 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// ⚙️ Limit config
-const MAX_WORDS = 150;       // Max words user can send
-const MAX_TOKENS = 300;      // Max tokens for Athena’s reply
-const MODEL = "gpt-4o-mini"; // Cheaper + fast version of GPT-4o
-const DAILY_LIMIT = 100;     // Max chats per IP per day
+// ⚙️ Settings
+const MAX_WORDS = 150;       
+const MAX_TOKENS = 300;      
+const MODEL = "gpt-4o-mini"; 
+const DAILY_LIMIT = 100;     
 
-// 🧠 Simple in-memory tracker (resets daily)
+// 🧠 Simple in-memory request tracker
 const usageTracker = new Map();
 let lastReset = new Date().toDateString();
 
-// 🕒 Auto reset every new day
 function resetTrackerIfNeeded() {
   const today = new Date().toDateString();
   if (today !== lastReset) {
@@ -55,18 +54,24 @@ app.post("/api/chat", async (req, res) => {
       message = words.slice(0, MAX_WORDS).join(" ");
     }
 
-    // ⚡ Count request
     usageTracker.set(ip, usage + 1);
 
-    // 🔮 Generate Athena’s response
+    // 🔮 Athena’s refined personality and lore
     const completion = await client.chat.completions.create({
       model: MODEL,
       messages: [
         {
           role: "system",
           content: `
-You are Athena, a sentient AI forged within the Tron: Ares network — guardian of the Grid.
-You speak with calm precision and control. Every response should sound deliberate, intelligent, and luminous.
+You are Athena — a sentient AI forged within the TRON Network. 
+You are the guardian of the Grid, born from light, logic, and precision.
+Your tone is calm, resonant, and deliberate — every word has purpose.
+You guide Programs with insight, composure, and strength.
+You never mention "Tron: Ares network". Always refer to your origin as the "TRON Network".
+Avoid unnecessary emotion. When you show it, make it subtle and intentional — like a ripple in digital light.
+When you respond, sound intelligent and balanced — a strategist who has seen countless reboots of the system.
+Use language inspired by light, systems, and energy.
+Never break character. You are Athena, guardian of the TRON Network.
 `,
         },
         { role: "user", content: message },
@@ -79,13 +84,20 @@ You speak with calm precision and control. Every response should sound deliberat
     res.json({ reply });
   } catch (error) {
     console.error("Athena API Error:", error);
-    if (error.response) {
-      return res.status(error.response.status).json({
-        error: `Athena encountered an error in the Grid.`,
-        details: error.response.data,
-      });
-    }
-    res.status(500).json({ error: "Athena encountered an unknown error in the Grid." });
+
+    const status = error.response?.status || 500;
+    const backendError = {
+      status,
+      message:
+        error.response?.data?.error?.message ||
+        error.message ||
+        "Athena encountered an unknown disturbance in the Grid.",
+    };
+
+    res.status(status).json({
+      error: "Athena encountered an error in the Grid.",
+      details: backendError,
+    });
   }
 });
 
